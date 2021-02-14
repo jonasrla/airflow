@@ -161,7 +161,16 @@ class Connection(Base, LoggingMixin):  # pylint: disable=too-many-instance-attri
         self.password = unquote(uri_parts.password) if uri_parts.password else uri_parts.password
         self.port = uri_parts.port
         if uri_parts.query:
-            self.extra = json.dumps(dict(parse_qsl(uri_parts.query, keep_blank_values=True)))
+            self.extra = self.parse_extra(uri_parts.query)
+
+    def parse_extra(query):
+        extra = dict()
+        for key, value in parse_qsl(query, keep_blank_values=True):
+            try:
+                extra[key] = json.loads(value.replace("'", '"'))
+            except json.JSONDecodeError:
+                extra[key] = value
+        return json.dumps(extra)
 
     def get_uri(self) -> str:
         """Return connection in URI format"""
